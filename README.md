@@ -75,3 +75,40 @@ Exemplo de validação no MySQL:
 ```bash
 docker exec mysql-order mysql -uroot -pminhasenha -e "use order; select id, customer_id, status from orders order by id desc limit 5;"
 ```
+
+## Tratamento de Erros 
+
+Este projeto implementa validações com códigos de status gRPC apropriados:
+
+### Order Service
+- **Validação:** Máximo de 50 itens (quantidade total)
+- **Erro:** `INVALID_ARGUMENT` - "Order cannot have more than 50 items in total."
+- **Status do Pedido:** Atualiza automaticamente para:
+  - `"Paid"` → após pagamento bem-sucedido
+  - `"Canceled"` → se houver erro no pagamento
+
+### Payment Service
+- **Validação:** Máximo de R$ 1.000,00 por transação
+- **Erro:** `INVALID_ARGUMENT` - "Payment over 1000 is not allowed."
+- **Erros Internos:** Retorna `INTERNAL` para erros de banco de dados
+
+### Exemplo de Teste com Erro
+
+```powershell
+# Teste: Pedido com 60 itens (acima do limite de 50)
+grpcurl -plaintext -d "{\"costumer_id\":123,\"order_items\":[{\"product_code\":\"prod\",\"quantity\":60,\"unit_price\":10}]}" localhost:3000 Order/Create
+```
+
+**Resposta esperada:**
+```
+Code: InvalidArgument
+Message: Order cannot have more than 50 items in total.
+```
+
+### Códigos de Status 
+
+| Código | Significado |
+|--------|-------------|
+| `OK` | Requisição executada com sucesso |
+| `INVALID_ARGUMENT` | Validação falhou (ex: quantidade > 50, valor > 1000) |
+| `INTERNAL` | Erro interno do servidor (ex: erro de banco de dados) |

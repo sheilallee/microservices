@@ -50,6 +50,16 @@ func (a Adapter) Save(ctx context.Context, payment *domain.Payment) error {
 	return res.Error
 }
 
+func (a Adapter) Update(ctx context.Context, payment *domain.Payment) error {
+	res := a.db.WithContext(ctx).Model(&Payment{}).Where("id = ?", payment.ID).Updates(map[string]interface{}{
+		"customer_id": payment.CustomerID,
+		"status":      payment.Status,
+		"order_id":    payment.OrderId,
+		"total_price": payment.TotalPrice,
+	})
+	return res.Error
+}
+
 func NewAdapter(dataSourceUrl string) (*Adapter, error) {
 	db, openErr := gorm.Open(mysql.Open(dataSourceUrl), &gorm.Config{})
 	if openErr != nil {

@@ -80,3 +80,8 @@ func (a Adapter) Save(order *domain.Order) error {
 	}
 	return res.Error
 }
+
+func (a Adapter) Update(order *domain.Order) error {
+	res := a.db.Model(&Order{}).Where("id = ?", order.ID).Update("status", order.Status)
+	return res.Error
+}
