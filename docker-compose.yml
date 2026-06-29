@@ -1,0 +1,82 @@
+# Execute este arquivo a partir da pasta "microservices/" com:
+#   docker compose up --build
+#
+# O build context é definido como ".." (pasta raiz do projeto)
+# para que os Dockerfiles consigam acessar tanto "microservices/" quanto
+# "microservices-proto/" ao resolver os replace directives do go.mod.
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: minhasenha
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-pminhasenha"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  payment:
+    build:
+      context: ..
+      dockerfile: microservices/payment/Dockerfile
+    container_name: payment
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      ENV: production
+      DB_DRIVER: mysql
+      DATA_SOURCE_URL: root:minhasenha@tcp(mysql:3306)/payment?charset=utf8mb4&parseTime=True&loc=Local
+      APPLICATION_PORT: "3001"
+    ports:
+      - "3001:3001"
+
+  shipping:
+    build:
+      context: ..
+      dockerfile: microservices/shipping/Dockerfile
+    container_name: shipping
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      ENV: production
+      DATA_SOURCE_URL: root:minhasenha@tcp(mysql:3306)/shipping?charset=utf8mb4&parseTime=True&loc=Local
+      APPLICATION_PORT: "3002"
+    ports:
+      - "3002:3002"
+
+  order:
+    build:
+      context: ..
+      dockerfile: microservices/order/Dockerfile
+    container_name: order
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+      payment:
+        condition: service_started
+      shipping:
+        condition: service_started
+    environment:
+      ENV: production
+      DATA_SOURCE_URL: root:minhasenha@tcp(mysql:3306)/order?charset=utf8mb4&parseTime=True&loc=Local
+      APPLICATION_PORT: "3000"
+      PAYMENT_SERVICE_URL: payment:3001
+      SHIPPING_SERVICE_URL: shipping:3002
+    ports:
+      - "3000:3000"
+
+volumes:
+  mysql_data:

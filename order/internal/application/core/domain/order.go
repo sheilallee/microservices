@@ -16,6 +16,13 @@ type Order struct {
 	CreatedAt  int64       `json:"created_at"`
 }
 
+// StockItem representa um produto disponível no estoque.
+type StockItem struct {
+	ProductCode string  `json:"product_code"`
+	Name        string  `json:"name"`
+	UnitPrice   float32 `json:"unit_price"`
+}
+
 func NewOrder(customerId int64, orderItems []OrderItem) Order {
 	return Order{
 		CreatedAt:  time.Now().Unix(),

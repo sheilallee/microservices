@@ -23,15 +23,15 @@ const (
 )
 
 func tracerProvider(url string) (*tracesdk.TracerProvider, error) {
-	// Create the Jaeger exporter
+	// Cria o exportador Jaeger
 	exp, err := jaeger.New(jaeger.WithCollectorEndpoint(jaeger.WithEndpoint(url)))
 	if err != nil {
 		return nil, err
 	}
 	tp := tracesdk.NewTracerProvider(
-		// Always be sure to batch in production.
+		// Sempre utilize batch em produção.
 		tracesdk.WithBatcher(exp),
-		// Record information about this application in a Resource.
+		// Registra informações sobre esta aplicação em um Resource.
 		tracesdk.WithResource(resource.NewWithAttributes(
 			semconv.SchemaURL,
 			semconv.ServiceNameKey.String(service),

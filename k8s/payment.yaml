@@ -1,0 +1,42 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: payment
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: payment
+  template:
+    metadata:
+      labels:
+        app: payment
+    spec:
+      containers:
+        - name: payment
+          image: grpc-payment:latest
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: ENV
+              value: "production"
+            - name: DB_DRIVER
+              value: "mysql"
+            - name: DATA_SOURCE_URL
+              value: "root:minhasenha@tcp(mysql:3306)/payment?charset=utf8mb4&parseTime=True&loc=Local"
+            - name: APPLICATION_PORT
+              value: "3001"
+          ports:
+            - containerPort: 3001
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: payment
+  namespace: default
+spec:
+  selector:
+    app: payment
+  ports:
+    - port: 3001
+      targetPort: 3001
